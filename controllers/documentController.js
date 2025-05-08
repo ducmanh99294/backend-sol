@@ -26,8 +26,6 @@ exports.getAllDocuments = async (req, res) => {
   }
 };
 
-
-
 exports.uploadDocument = async (req, res) => {
   try {
     console.log("📥 [uploadDocument] File received:", req.file);
@@ -39,41 +37,25 @@ exports.uploadDocument = async (req, res) => {
 
     const { buffer, originalname } = req.file;
 
-    // Upload file lên IPFS qua Pinata
+    // ✅ Chỉ upload lên IPFS (qua Pinata)
     const cid = await uploadFile(buffer, originalname);
-
-    // Tính hash nếu cần xác minh sau
     const hash = Web3.utils.keccak256(cid);
 
     console.log("✅ IPFS CID:", cid);
     console.log("🔒 Document hash:", hash);
 
-    // Gửi CID gốc lên smart contract (có kiểm tra trùng lặp)
-    const result = await storeCID(cid);
-
-    if (result.alreadyStored) {
-      console.warn("⚠️ CID đã tồn tại trên blockchain, không cần lưu lại");
-      return res.status(200).json({
-        message: "CID already exists on blockchain.",
-        cid,
-        hash: result.hash,
-        alreadyStored: true
-      });
-    }
-
+    // ❌ Không gọi storeCID ở backend nữa
     res.status(200).json({
-      message: 'Uploaded successfully',
+      message: 'Uploaded to IPFS. Please confirm on MetaMask to store.',
       cid,
-      hash: result.hash
+      hash
     });
 
   } catch (err) {
     console.error("❌ Error in uploadDocument:", err);
-    console.error("🧠 Stack trace:", err.stack);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 exports.verify = async (req, res) => {
   try {
